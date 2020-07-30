@@ -1,6 +1,6 @@
 import * as express from "express";
-// import * as fs from "fs";
-// import * as https from "https";
+import * as fs from "fs";
+import * as https from "https";
 import { IExpressError } from "./interfaces/IExpressError";
 import { env } from "./env";
 import { setDiscoveryClientRoute } from "./routes/discovery-client.route";
@@ -13,8 +13,17 @@ import * as bodyParser from "body-parser";
 
 let app: express.Application;
 
-const makeApp = async function (): Promise<express.Application> {
-	if (app) return app;
+const makeApp = async function (): Promise<https.Server> {
+	
+	// import SSL certificate for HTTPS:
+	let privateKey = fs.readFileSync("src/ssl/mydomain.key");
+	let certificate = fs.readFileSync("src/ssl/mydomain.crt");
+	let credentials = {
+		key: privateKey,
+		cert: certificate
+	};
+
+	if (app) return https.createServer(credentials, app);
 
 	app = express();
 
@@ -56,17 +65,7 @@ const makeApp = async function (): Promise<express.Application> {
 			.send(env.NODE_ENV === "development" ? err : {});
 	});
 
-	// the HTTPS way:
-
-	// let privateKey = fs.readFileSync("src/ssl/mydomain.key");
-	// let certificate = fs.readFileSync("src/ssl/mydomain.crt");
-	// let credentials = {
-	// 	key: privateKey,
-	// 	cert: certificate
-	// };
-
-	// return https.createServer(credentials, app);
-	return app;
+	return https.createServer(credentials, app);
 }
 
 export { makeApp }
