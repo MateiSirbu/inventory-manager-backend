@@ -1,16 +1,51 @@
-﻿import * as express from "express"
-import * as aJsonService from "../services/a-json.service";
+﻿import { Router, Response, NextFunction } from "express";
+import { EntityManager } from "mikro-orm";
+import { AJson } from "../entities/a-json.entity";
+import { IExpressRequest } from "../interfaces/IExpressRequest";
+import * as jsonService from "../services/a-json.service";
 
-const aJsonRouter = express.Router();
-aJsonRouter.get("/", getAJson);
+export { setAJsonRoute };
 
-function getAJson(_req: express.Request, res: express.Response, next: express.NextFunction) {
+function setAJsonRoute(router: Router): Router {
+	router.get("/", getAJson);
+	router.post("/", postAJson);
+
+	return router;
+}
+
+async function getAJson(req: IExpressRequest, res: Response, next: NextFunction) {
+	if (!req.em || !(req.em instanceof EntityManager))
+		return next(Error("EntityManager not available"));
+
+	let aJson: Error | AJson | null;
 	try {
-		const jsonData = aJsonService.getAJson();
-		return res.json(jsonData);
+		aJson = await jsonService.getAJson(req.em, req.query.key1 as string);
 	} catch (ex) {
 		return next(ex);
 	}
+
+	if (aJson instanceof Error)
+		return next(aJson);
+
+	if (aJson === null)
+		return res.status(404).end();
+
+	return res.json(aJson);
 }
 
-export { aJsonRouter }
+async function postAJson(req: IExpressRequest, res: Response, next: NextFunction) {
+	if (!req.em || !(req.em instanceof EntityManager))
+		return next(Error("EntityManager not available"));
+
+	let aJson: Error | AJson;
+	try {
+		aJson = await jsonService.saveAJson(req.em, req.body);
+	} catch (ex) {
+		return next(ex);
+	}
+
+	if (aJson instanceof Error)
+		return next(aJson);
+
+	return res.status(201).json(aJson);
+}

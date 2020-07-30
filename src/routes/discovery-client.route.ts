@@ -1,11 +1,16 @@
-﻿import * as express from "express"
+﻿import { Router, Request, Response, NextFunction } from "express";
 import { env } from "../env";
 
-const discoveryClientRouter = express.Router();
+const discoveryClientRouter = Router();
 
 discoveryClientRouter.get("/", getdiscoveryClient);
 
-function getdiscoveryClient(_req: express.Request, res: express.Response, next:express.NextFunction) {
+function setDiscoveryClientRoute(router: Router): Router {
+	router.get("/", getdiscoveryClient);
+	return router;
+}
+
+function getdiscoveryClient(_req: Request, res: Response, next: NextFunction) {
 	try {
 		const clientSettings = {
 			jsonRoute: env.A_JSON_ROUTE
@@ -16,4 +21,4 @@ function getdiscoveryClient(_req: express.Request, res: express.Response, next:e
 	}
 }
 
-export { discoveryClientRouter }
+export { setDiscoveryClientRoute }

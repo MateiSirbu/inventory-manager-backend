@@ -1,22 +1,46 @@
 import * as express from "express";
-import * as fs from "fs";
-import * as https from "https";
+// import * as fs from "fs";
+// import * as https from "https";
 import { IExpressError } from "./interfaces/IExpressError";
 import { env } from "./env";
-import { discoveryClientRouter } from "./routes/discovery-client.route";
-import { aJsonRouter } from "./routes/a-json.route";
+import { setDiscoveryClientRoute } from "./routes/discovery-client.route";
+import { setAJsonRoute } from "./routes/a-json.route";
 import { sha256Router } from "./routes/sha256.route";
+import { MikroORM, ReflectMetadataProvider } from "mikro-orm";
+import entities from "./entities"
+import { IExpressRequest } from "./interfaces/IExpressRequest";
+import * as bodyParser from "body-parser";
 
 let app: express.Application;
 
-const makeApp = function () {
+const makeApp = async function (): Promise<express.Application> {
 	if (app) return app;
 
 	app = express();
 
+	const orm = await MikroORM.init({
+		metadataProvider: ReflectMetadataProvider,
+		cache: { enabled: false },
+		entities: entities,
+		dbName: env.DB_NAME,
+		clientUrl: env.MONGO_URL,
+		type: "mongo",
+		autoFlush: false
+	});
+
+	// make the entity manager available in request
+	app.use((req: IExpressRequest, _res: express.Response, next: express.NextFunction) => {
+		req.em = orm.em.fork();
+		next();
+	});
+
+	// middleware
+	app.use(bodyParser.urlencoded({ extended: false }));
+	app.use(bodyParser.json());
+
 	// routes 
-	app.use(env.DISCOVERY_CLIENT_ROUTE, discoveryClientRouter);
-	app.use(env.A_JSON_ROUTE, aJsonRouter);
+	app.use(env.DISCOVERY_CLIENT_ROUTE, setDiscoveryClientRoute(express.Router()));
+	app.use(env.A_JSON_ROUTE, setAJsonRoute(express.Router()));
 	app.use(env.SHA256_ROUTE, sha256Router);
 
 	// 404
@@ -32,14 +56,17 @@ const makeApp = function () {
 			.send(env.NODE_ENV === "development" ? err : {});
 	});
 
-	let privateKey = fs.readFileSync("src/ssl/mydomain.key");
-	let certificate = fs.readFileSync("src/ssl/mydomain.crt");
-	let credentials = {
-		key: privateKey,
-		cert: certificate
-	};
+	// the HTTPS way:
 
-	return https.createServer(credentials, app);
+	// let privateKey = fs.readFileSync("src/ssl/mydomain.key");
+	// let certificate = fs.readFileSync("src/ssl/mydomain.crt");
+	// let credentials = {
+	// 	key: privateKey,
+	// 	cert: certificate
+	// };
+
+	// return https.createServer(credentials, app);
+	return app;
 }
 
 export { makeApp }
