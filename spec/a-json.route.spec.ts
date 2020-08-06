@@ -1,5 +1,6 @@
-import { Router, Response, NextFunction } from "express";
+import { Router } from "express";
 import { noCallThru } from "proxyquire";
+import { getRouterMock, getResponseSpyMock, getNextFunctionSpyMock } from "./express-router-test.helper";
 import { IExpressRequest } from "../src/interfaces/IExpressRequest";
 
 const proxyquire = noCallThru();
@@ -9,54 +10,144 @@ describe("a-json.route", () => {
 
 	// prepare the exports object of the mocked dependency
 	// this is empty now because it will be asigned different values per test
-	const aJsonService: { getAJson(): { [key: string]: string } } = <any>{};
+	const aJsonService: { 
+		getAJson(): { [key: string]: string } | Error | null,
+		saveAJson(): { [key: string]: string } | Error
+	} = <any>{};
+
+	class EntityManager { }
 
 	const aJsonRoute: { setAJsonRoute(router: Router): Router } = proxyquire(
 		"../src/routes/a-json.route",
 		{
+			"mikro-orm": { EntityManager },
 			"../services/a-json.service": aJsonService
 		}
 	);
 
-	// define object to keep all registered routes and get reference to their callbacks
-	const routes: { [path: string]: Function } = {};
-
-	// mock the router object and the methods it defines, so we can get reference to their callbacks
-	const router = <Router><any>{
-		get: (path: string, cb: (req: IExpressRequest, res: Response, next: NextFunction) => any) => routes[path] = cb,
-		post: (path: string, cb: (req: IExpressRequest, res: Response, next: NextFunction) => any) => routes[path] = cb
-	};
+	const { router, routes } = getRouterMock();
 
 	// build router; the routes will now contain all paths and their callbacks
 	// all we have to do now is call the callbacks with the desired params to test behaviour
 	beforeAll(() => aJsonRoute.setAJsonRoute(router));
 
 	it("setAJsonRoute - router setup", () => {
-		expect(routes["/"]).toBeDefined("route get / not setup");
-		expect(typeof routes["/"]).toBe("function", "route get / not a function");
+		expect(routes["GET"]["/"]).toBeDefined("route GET / not setup");
+		expect(typeof routes["GET"]["/"]).toBe("function", "route GET / not a function");
+		expect(routes["POST"]["/"]).toBeDefined("route POST / not setup");
+		expect(typeof routes["POST"]["/"]).toBe("function", "route POST / not a function");
 	});
 
-	it("setAJsonRoute - get / - success", () => {
-		aJsonService.getAJson = () => ({ mockKey: "mock value" });
+	// GET
+	it("setAJsonRoute - GET / - exit point 1", async () => {
+		const req = <IExpressRequest>{};
+		const next = getNextFunctionSpyMock();
 
-		let result: { [key: string]: string } = <any>undefined;
-		const res = { json: (val: any) => result = val };
+		await routes["GET"]["/"](req, undefined, next);
 
-		routes["/"](null, res, null);
+		expect(next).toHaveBeenCalledWith(Error("EntityManager not available"));
+	});
+	it("setAJsonRoute - GET / - exit point 2", async () => {
+		const err = Error("service mock error");
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			query: {}
+		};
+		const next = getNextFunctionSpyMock();
+		aJsonService.getAJson = () => { throw err; };
 
-		expect(result).toBeDefined("route get / not ended with json()");
-		expect(result.mockKey).toBe("mock value", "route get / not ended with correct json() object");
+		await routes["GET"]["/"](req, undefined, next);
+
+		expect(next).toHaveBeenCalledWith(err);
+	});
+	it("setAJsonRoute - GET / - exit point 3", async () => {
+		const err = Error("service mock error");
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			query: {}
+		};
+		const next = getNextFunctionSpyMock();
+		aJsonService.getAJson = () => err;
+
+		await routes["GET"]["/"](req, undefined, next);
+
+		expect(next).toHaveBeenCalledWith(err);
+	});
+	it("setAJsonRoute - GET / - exit point 4", async () => {
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			query: {}
+		};
+		const res = getResponseSpyMock();
+		aJsonService.getAJson = () => null;
+
+		await routes["GET"]["/"](req, res, undefined);
+
+		expect(res.status).toHaveBeenCalledWith(404);
+		expect(res.end).toHaveBeenCalled();
+	});
+	it("setAJsonRoute - GET / - exit point 5", async () => {
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			query: {}
+		};
+		const res = getResponseSpyMock();
+		const json = { mockKey: "mock value" };
+		aJsonService.getAJson = () => json;
+
+		await routes["GET"]["/"](req, res, null);
+
+		expect(res.json).toHaveBeenCalledWith(json);
 	});
 
-	it("setAJsonRoute - get / - error", () => {
-		aJsonService.getAJson = () => { throw new Error("test"); };
+	// POST
+	it("setAJsonRoute - POST / - exit point 1", async () => {
+		const req = <IExpressRequest>{};
+		const next = getNextFunctionSpyMock();
 
-		let result: Error = <any>undefined;
-		const next = (val: any) => result = val;
+		await routes["POST"]["/"](req, undefined, next);
 
-		routes["/"](null, null, next);
+		expect(next).toHaveBeenCalledWith(Error("EntityManager not available"));
+	});
 
-		expect(result).toBeDefined("route get / not ended with next()");
-		expect(result.message).toBe("test", "route get / not ended with correct next() error");
+	it("setAJsonRoute - POST / - exit point 2", async () => { 
+		const err = Error("service mock error");
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			body: {}
+		};
+		const next = getNextFunctionSpyMock();
+		aJsonService.saveAJson = () => { throw err; };
+
+		await routes["POST"]["/"](req, undefined, next);
+
+		expect(next).toHaveBeenCalledWith(err);
+	});
+
+	it("setAJsonRoute - POST / - exit point 3", async () => { 
+		const err = Error("service mock error");
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			body: {}
+		};
+		const next = getNextFunctionSpyMock();
+		aJsonService.saveAJson = () => err;
+
+		await routes["POST"]["/"](req, undefined, next);
+
+		expect(next).toHaveBeenCalledWith(err);
+	});
+	it("setAJsonRoute - POST / - exit point 4", async () => { 
+		const req = <IExpressRequest>{
+			em: new EntityManager(),
+			body: {}
+		};
+		const res = getResponseSpyMock();
+		const json = { mockKey: "mock value" };
+		aJsonService.saveAJson = () => json;
+
+		await routes["POST"]["/"](req, res, null);
+
+		expect(res.json).toHaveBeenCalledWith(json);
 	});
 });

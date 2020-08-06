@@ -12,7 +12,8 @@ function getRouterMock() {
 	};
 
 	const router = <Router><any>{
-		get: (path: string, cb: (req: IExpressRequest, res: Response, next: NextFunction) => any) => addRoute("GET", path, cb)
+		get: (path: string, cb: (req: IExpressRequest, res: Response, next: NextFunction) => any) => addRoute("GET", path, cb),
+		post: (path: string, cb: (req: IExpressRequest, res: Response, next: NextFunction) => any) => addRoute("POST", path, cb)
 	};
 
 	return { router, routes };
@@ -28,6 +29,10 @@ function getResponseSpyMock(): Response {
 	const json = (_json: Object): Response => { _json = _json; return res; };
 	res.json = json;
 	spyOn(res, <any>res.json.name).and.callThrough();
+
+	const end = (): Response => res;
+	res.end = end;
+	spyOn(res, <any>res.end.name).and.callThrough();
 
 	return res;
 }

@@ -1,6 +1,4 @@
 import * as express from "express";
-import * as fs from "fs";
-import * as https from "https";
 import { IExpressError } from "./interfaces/IExpressError";
 import { env } from "./env";
 import { setDiscoveryClientRoute } from "./routes/discovery-client.route";
@@ -13,21 +11,12 @@ import * as bodyParser from "body-parser";
 
 let app: express.Application;
 
-const makeApp = async function (): Promise<https.Server> {
-	
-	// import SSL certificate for HTTPS:
-	let privateKey = fs.readFileSync("src/ssl/mydomain.key");
-	let certificate = fs.readFileSync("src/ssl/mydomain.crt");
-	let credentials = {
-		key: privateKey,
-		cert: certificate
-	};
-
-	if (app) return https.createServer(credentials, app);
+const makeApp = function (): express.Application {
+	if (app) return app;
 
 	app = express();
 
-	const orm = await MikroORM.init({
+	const orm = MikroORM.init({
 		metadataProvider: ReflectMetadataProvider,
 		cache: { enabled: false },
 		entities: entities,
@@ -38,8 +27,8 @@ const makeApp = async function (): Promise<https.Server> {
 	});
 
 	// make the entity manager available in request
-	app.use((req: IExpressRequest, _res: express.Response, next: express.NextFunction) => {
-		req.em = orm.em.fork();
+	app.use(async (req: IExpressRequest, _res: express.Response, next: express.NextFunction) => {
+		req.em = (await orm).em.fork();
 		next();
 	});
 
@@ -64,8 +53,8 @@ const makeApp = async function (): Promise<https.Server> {
 		res.status(err.status || 500)
 			.send(env.NODE_ENV === "development" ? err : {});
 	});
-
-	return https.createServer(credentials, app);
+	
+	return app;
 }
 
 export { makeApp }

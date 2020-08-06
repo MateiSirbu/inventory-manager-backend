@@ -1,8 +1,13 @@
 const { env } = require("./env");
 const { makeApp } = require("./app");
-const { log } = require("./log");
 import * as https from "https";
+import * as fs from "fs";
 
-makeApp()
-    .then((app: https.Server) => app.listen(env.PORT, () => log(`${env.NODE_ENV} server listening on port ${env.PORT}`)))
-    .catch((err: any) => log(err))
+// import SSL certificate for HTTPS:
+let privateKey = fs.readFileSync("src/ssl/mydomain.key");
+let certificate = fs.readFileSync("src/ssl/mydomain.crt");
+
+let app = makeApp()
+let server = https.createServer({ key: privateKey, cert: certificate }, app);
+console.log(`Server listening on port ${env.PORT}`)
+server.listen(env.PORT)
