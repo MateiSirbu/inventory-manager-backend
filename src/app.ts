@@ -4,6 +4,7 @@ import { env } from "./env";
 import { setDiscoveryClientRoute } from "./routes/discovery-client.route";
 import { setAJsonRoute } from "./routes/a-json.route";
 import { sha256Router } from "./routes/sha256.route";
+import { setInventoryItemRoute } from "./routes/inventory-item.route"
 import { MikroORM, ReflectMetadataProvider } from "mikro-orm";
 import entities from "./entities"
 import { IExpressRequest } from "./interfaces/IExpressRequest";
@@ -40,6 +41,7 @@ const makeApp = function (): express.Application {
 	app.use(env.DISCOVERY_CLIENT_ROUTE, setDiscoveryClientRoute(express.Router()));
 	app.use(env.A_JSON_ROUTE, setAJsonRoute(express.Router()));
 	app.use(env.SHA256_ROUTE, sha256Router);
+	app.use(env.INVENTORY_ITEM_ROUTE, setInventoryItemRoute(express.Router()));
 
 	// 404
 	app.use((_req, _res, next) => {
