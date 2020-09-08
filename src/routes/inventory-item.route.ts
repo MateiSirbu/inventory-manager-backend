@@ -10,7 +10,7 @@ function setInventoryItemRoute(router: Router): Router {
   router.get("/", getInventoryItems);
   router.get("/:id", getInventoryItem);
   router.post("/", postInventoryItem);
-  router.put("/", putInventoryItem);
+  router.put("/:id", putInventoryItem);
   router.delete("/:id", removeInventoryItem);
 
   return router;
@@ -30,11 +30,13 @@ async function getInventoryItems(
   let page = req.query.pageNumber
     ? parseInt(req.query.pageNumber.toString())
     : 1;
-  let limit = req.query.pageSize ? parseInt(req.query.pageSize.toString()) : 50;
+  
+  let limit = req.query.pageSize ? parseInt(req.query.pageSize.toString()) : 5;
+
   try {
     [inventoryItems, count] = await Promise.all([
-      inventoryItemService.getInventoryItems(req.em, page, limit),
-      inventoryItemService.countInventoryItems(req.em),
+      inventoryItemService.getAllInventoryItems(req.em, page, limit, req.query.sort ? req.query.sort.toString() : '', req.query.activeOnly === 'true'),
+      inventoryItemService.countInventoryItems(req.em, req.query.activeOnly === 'true'),
     ]);
   } catch (ex) {
     return next(ex);
@@ -113,7 +115,7 @@ async function postInventoryItem(
 async function putInventoryItem(
   req: IExpressRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   if (!req.em || !(req.em instanceof EntityManager))
     return next(Error("EntityManager not available"));
@@ -122,7 +124,8 @@ async function putInventoryItem(
   try {
     inventoryItem = await inventoryItemService.updateInventoryItem(
       req.em,
-      req.body
+      req.body,
+      req.params.id
     );
   } catch (ex) {
     return next(ex);

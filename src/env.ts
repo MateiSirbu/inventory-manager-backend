@@ -1,5 +1,5 @@
 export const env = Object.freeze({
-	PORT: 443,
+	PORT: 8443,
 
 	NODE_ENV: "development",
 
