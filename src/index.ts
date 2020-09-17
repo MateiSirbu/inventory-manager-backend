@@ -4,8 +4,8 @@ import * as https from "https";
 import * as fs from "fs";
 
 // import SSL certificate for HTTPS:
-let privateKey = fs.readFileSync("src/ssl/mydomain.key");
-let certificate = fs.readFileSync("src/ssl/mydomain.crt");
+let privateKey = fs.readFileSync("src/ssl/backend.key");
+let certificate = fs.readFileSync("src/ssl/backend.crt");
 
 let app = makeApp()
 let server = https.createServer({ key: privateKey, cert: certificate }, app);
