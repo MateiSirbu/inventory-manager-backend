@@ -5,6 +5,8 @@ import { setDiscoveryClientRoute } from "./routes/discovery-client.route";
 import { setAJsonRoute } from "./routes/a-json.route";
 import { sha256Router } from "./routes/sha256.route";
 import { setInventoryItemRoute } from "./routes/inventory-item.route"
+import { setLoginRoute } from "./routes/login.route";
+import { setRegisterRoute } from "./routes/register.route";
 import { MikroORM, ReflectMetadataProvider } from "mikro-orm";
 import entities from "./entities"
 import { IExpressRequest } from "./interfaces/IExpressRequest";
@@ -42,6 +44,8 @@ const makeApp = function (): express.Application {
 	app.use(env.A_JSON_ROUTE, setAJsonRoute(express.Router()));
 	app.use(env.SHA256_ROUTE, sha256Router);
 	app.use(env.INVENTORY_ITEM_ROUTE, setInventoryItemRoute(express.Router()));
+	app.use(env.LOGIN_ROUTE, setLoginRoute(express.Router()));
+	app.use(env.REGISTER_ROUTE, setRegisterRoute(express.Router()));
 
 	// 404
 	app.use((_req, _res, next) => {
@@ -55,7 +59,7 @@ const makeApp = function (): express.Application {
 		res.status(err.status || 500)
 			.send(env.NODE_ENV === "development" ? err : {});
 	});
-	
+
 	return app;
 }
 

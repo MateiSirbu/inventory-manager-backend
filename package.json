@@ -19,13 +19,15 @@
   "dependencies": {
     "@types/crypto-js": "^3.1.47",
     "@types/express": "^4.17.7",
+    "@types/jsonwebtoken": "^8.5.0",
     "body-parser": "^1.19.0",
     "crypto-js": "^4.0.0",
     "express": "^4.17.1",
+    "inventory-interfaces": "file:../Interfaces",
     "istanbul": "^1.1.0-alpha.1",
+    "jsonwebtoken": "^8.5.1",
     "mikro-orm": "^3.6.15",
-    "mongodb": "^3.5.9",
-    "inventory-interfaces": "file:../Interfaces"
+    "mongodb": "^3.5.9"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.0",

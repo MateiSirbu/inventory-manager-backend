@@ -1,0 +1,94 @@
+import { User } from "../entities/user.entity";
+import { EntityManager, wrap } from "mikro-orm";
+
+export {
+    getUsers,
+    getUser,
+    updateUser,
+    addUser,
+    removeUser,
+    countUsers,
+};
+
+async function countUsers(em: EntityManager) {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+    try {
+        const count = await em.count(
+            User
+        );
+        return count;
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function getUsers(em: EntityManager): Promise<Error | User[]> {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+
+    try {
+        const items = await em.find(
+            User, {}
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return items;
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function getUser(em: EntityManager, email: string): Promise<Error | User | null> {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+
+    if (!email || typeof email !== "string") return Error("invalid params");
+
+    try {
+        const item = await em.findOne(User, { email: email });
+        return item;
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function removeUser(em: EntityManager, email: string): Promise<Error | void> {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+
+    if (!email || typeof email !== "string") return Error("invalid params");
+
+    try {
+        const item = await em.findOneOrFail(User, { email: email });
+        await em.removeAndFlush(item);
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function updateUser(em: EntityManager, user: Partial<User>, email: string): Promise<Error | User> {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+
+    if (!user || typeof user !== "object" || !user.email || email !== user.email)
+        return Error("invalid params");
+
+    try {
+        const item = await em.findOneOrFail(User, { email: user.email });
+        wrap(item).assign(user);
+        await em.persistAndFlush(item);
+        return item;
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function addUser(em: EntityManager, user: Partial<User>): Promise<Error | User> {
+    if (!(em instanceof EntityManager)) return Error("invalid request");
+
+    if (!user || typeof user !== "object" || !user.email || !user.firstName || !user.lastName)
+        return Error("invalid params");
+
+    try {
+        const item = new User(user);
+        await em.persistAndFlush(item);
+        return item;
+    } catch (ex) {
+        return ex;
+    }
+}
