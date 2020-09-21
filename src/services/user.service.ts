@@ -3,7 +3,8 @@ import { EntityManager, wrap } from "mikro-orm";
 
 export {
     getUsers,
-    getUser,
+    getUserById,
+    getUserByEmail,
     updateUser,
     addUser,
     removeUser,
@@ -11,7 +12,7 @@ export {
 };
 
 async function countUsers(em: EntityManager) {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
     try {
         const count = await em.count(
             User
@@ -23,7 +24,7 @@ async function countUsers(em: EntityManager) {
 }
 
 async function getUsers(em: EntityManager): Promise<Error | User[]> {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
 
     try {
         const items = await em.find(
@@ -36,10 +37,23 @@ async function getUsers(em: EntityManager): Promise<Error | User[]> {
     }
 }
 
-async function getUser(em: EntityManager, email: string): Promise<Error | User | null> {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+async function getUserById(em: EntityManager, id: string): Promise<Error | User | null> {
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
 
-    if (!email || typeof email !== "string") return Error("invalid params");
+    if (!id || typeof id !== "string") return Error("Invalid params");
+
+    try {
+        const item = em.findOne(User, { id: id });
+        return item;
+    } catch (ex) {
+        return ex;
+    }
+}
+
+async function getUserByEmail(em: EntityManager, email: string): Promise<Error | User | null> {
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
+
+    if (!email || typeof email !== "string") return Error("Invalid params");
 
     try {
         const item = await em.findOne(User, { email: email });
@@ -50,9 +64,9 @@ async function getUser(em: EntityManager, email: string): Promise<Error | User |
 }
 
 async function removeUser(em: EntityManager, email: string): Promise<Error | void> {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
 
-    if (!email || typeof email !== "string") return Error("invalid params");
+    if (!email || typeof email !== "string") return Error("Invalid params");
 
     try {
         const item = await em.findOneOrFail(User, { email: email });
@@ -63,10 +77,10 @@ async function removeUser(em: EntityManager, email: string): Promise<Error | voi
 }
 
 async function updateUser(em: EntityManager, user: Partial<User>, email: string): Promise<Error | User> {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
 
     if (!user || typeof user !== "object" || !user.email || email !== user.email)
-        return Error("invalid params");
+        return Error("Invalid params");
 
     try {
         const item = await em.findOneOrFail(User, { email: user.email });
@@ -79,10 +93,12 @@ async function updateUser(em: EntityManager, user: Partial<User>, email: string)
 }
 
 async function addUser(em: EntityManager, user: Partial<User>): Promise<Error | User> {
-    if (!(em instanceof EntityManager)) return Error("invalid request");
+    if (!(em instanceof EntityManager)) return Error("Invalid request");
 
     if (!user || typeof user !== "object" || !user.email || !user.firstName || !user.lastName)
-        return Error("invalid params");
+        return Error("Invalid params");
+
+    if (await getUserByEmail(em, user.email) != null) return Error("E-mail address already associated with an account")
 
     try {
         const item = new User(user);

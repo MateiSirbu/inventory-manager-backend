@@ -3,15 +3,30 @@ import { EntityManager } from "mikro-orm";
 import { InventoryItem } from "../entities/inventory-item.entity";
 import { IExpressRequest } from "../interfaces/IExpressRequest";
 import * as inventoryItemService from "../services/inventory-item.service";
+import * as fs from "fs";
+import * as expressjwt from "express-jwt"
+import { env } from "../env";
 
 export { setInventoryItemRoute };
 
+// JWT verification using the public key
+const jwtVerify = expressjwt({
+  secret: fs.readFileSync(env.RSA_PUBLIC_KEY),
+  algorithms: ['RS256'],
+  getToken: function fromHeader(req) {
+    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+      return req.headers.authorization.split(' ')[1];
+    }
+    return null;
+  }
+})
+
 function setInventoryItemRoute(router: Router): Router {
-  router.get("/", getInventoryItems);
-  router.get("/:id", getInventoryItem);
-  router.post("/", postInventoryItem);
-  router.put("/:id", putInventoryItem);
-  router.delete("/:id", removeInventoryItem);
+  router.get("/", jwtVerify, getInventoryItems);
+  router.get("/:id", jwtVerify, getInventoryItem);
+  router.post("/", jwtVerify, postInventoryItem);
+  router.put("/:id", jwtVerify, putInventoryItem);
+  router.delete("/:id", jwtVerify, removeInventoryItem);
 
   return router;
 }
@@ -30,7 +45,7 @@ async function getInventoryItems(
   let page = req.query.pageNumber
     ? parseInt(req.query.pageNumber.toString())
     : 1;
-  
+
   let limit = req.query.pageSize ? parseInt(req.query.pageSize.toString()) : 5;
 
   try {
