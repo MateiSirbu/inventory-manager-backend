@@ -13,6 +13,6 @@ export const env = Object.freeze({
 	MONGO_URL: "mongodb://127.0.0.1:27017",
 	DB_NAME: "inventory",
 
-	RSA_PUBLIC_KEY: 'src/ssl/jwtRS256.pub',
-	RSA_PRIVATE_KEY: 'src/ssl/jwtRS256.key'
+	RSA_PUBLIC_KEY: 'src/jwt/jwtRS256.pub',
+	RSA_PRIVATE_KEY: 'src/jwt/jwtRS256.key'
 });

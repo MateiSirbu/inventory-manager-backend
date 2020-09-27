@@ -7,10 +7,9 @@ import {
 } from "mikro-orm";
 
 import { ObjectId } from "mongodb";
-import { IUser } from "inventory-interfaces/User"
 
 @Entity()
-export class User implements MongoEntity<User>, IUser {
+export class User implements MongoEntity<User> {
   @PrimaryKey()
   _id!: ObjectId;
 
